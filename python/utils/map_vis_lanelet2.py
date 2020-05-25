@@ -72,6 +72,14 @@ def draw_lanelet_map(laneletmap, axes):
 
         plt.plot(ls_points_x, ls_points_y, **type_dict)
 
+    # plot centerline
+    for ll in laneletmap.laneletLayer:
+        cl_points_x = [pt.x for pt in ll.centerline]
+        cl_points_y = [pt.y for pt in ll.centerline]
+
+        type_dict = dict(color="red", linewidth=1, zorder=10, dashes=[10, 10])
+        plt.plot(cl_points_x, cl_points_y, **type_dict)
+
     if len(unknown_linestring_types) != 0:
         print("Found the following unknown types, did not plot them: " + str(unknown_linestring_types))
 
