@@ -17,11 +17,34 @@ import glob
 import os
 import tqdm
 import matplotlib.pyplot as plt
+import numpy as np
 
 from utils import dataset_reader
 
 # use our own visualize scripts (linked from cvm)
 from utils import visualize
+
+def filter_by_distance(pos, centerlines, max_distance = 50):
+    pos = np.array(pos)
+    result = []
+    for centerline in centerlines:
+        cl_np = np.array(centerline)
+        dist_sq = np.sum((cl_np - pos) ** 2, axis=1)
+        if np.min(dist_sq) <= max_distance ** 2:
+            result.append(centerline)
+    return result
+
+def filter_by_rel_goal_distance(pos_start, pos_end, centerlines):
+    result = []
+    for centerline in centerlines:
+        centerline_end = centerline[-1]
+
+        dist_start = (pos_start[0] - centerline_end[0]) ** 2 + (pos_start[1] - centerline_end[1]) ** 2
+        dist_end = (pos_end[0] - centerline_end[0]) ** 2 + (pos_end[1] - centerline_end[1]) ** 2
+
+        if dist_start > dist_end:
+            result.append(centerline)
+    return result
 
 if __name__ == "__main__":
 
@@ -129,7 +152,15 @@ if __name__ == "__main__":
                                                                                     dt_ms)]
                 # visualize data
                 fig, ax = plt.subplots()
-                visualize.draw_lanes(centerlines)
+                filtered_centerlines = filter_by_distance([track_x[past_horizon], track_y[past_horizon]],
+                                                          centerlines,
+                                                          max_distance=25)
+                # TODO: find closest lane w/ normal distance and perform dfs to prune irrelevant lanes
+                filtered_centerlines_final = filter_by_rel_goal_distance([track_x[0], track_y[0]],
+                                                                         [track_x[past_horizon], track_y[past_horizon]],
+                                                                         filtered_centerlines)
+                visualize.draw_lanes(filtered_centerlines, linewidth=0.5)
+                visualize.draw_lanes(filtered_centerlines_final, linewidth=2.0)
 
                 visualize.draw_traj(track_x[:past_horizon], track_y[:past_horizon],
                     marker='.', color='c', alpha=1, markersize=3, zorder=15)
